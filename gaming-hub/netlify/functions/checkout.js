@@ -5,7 +5,7 @@ const PRODUCTS = {
   ranger: { name: "Gaming Hub Ranger", price: 749900 },
   titan:  { name: "Gaming Hub Titan",  price: 1299900 },
   apex:   { name: "Gaming Hub Apex",   price: 2299900 },
-  scout:  { name: "Gaming Hub Scout",  price: 100 },
+  scout:  { name: "Gaming Hub Scout",  price: 599900 },
 };
 
 const json = (statusCode, body) => ({
