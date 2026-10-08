@@ -4,7 +4,7 @@ const { connectLambda, getStore } = require("@netlify/blobs");
 // para ninguém conseguir alterar o valor pelo navegador.
 // Se mudar um preço, mude também no index.html.
 const PRODUCTS = {
-  ranger: { name: "Gaming Hub Ranger", price: 749900 },
+  ranger: { name: "Gaming Hub Ranger", price: 100 },
   titan:  { name: "Gaming Hub Titan",  price: 1299900 },
   apex:   { name: "Gaming Hub Apex",   price: 2299900 },
   scout:  { name: "Gaming Hub Scout",  price: 1899900 },
