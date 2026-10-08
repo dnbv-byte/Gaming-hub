@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Pedidos | Gaming Hub</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#f5f7fb;color:#0f1626;margin:0;padding:24px}
+.w{max-width:880px;margin:0 auto}h1{font-size:22px;margin:0 0 16px}
+input,button{font:inherit;padding:10px 14px;border-radius:8px;border:1px solid #d5dbe6}
+button{background:#0a5cff;color:#fff;border-color:#0a5cff;cursor:pointer}
+button.g{background:#fff;color:#0f1626}button.g.on{background:#0f1626;color:#fff;border-color:#0f1626}
+[hidden]{display:none!important}.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.o{background:#fff;border:1px solid #e1e6ef;border-radius:12px;padding:16px;margin-bottom:12px}
+.top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+.s{font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px}
+.pago{background:#dcf5e6;color:#0b7a3b}.aguardando{background:#fff1d6;color:#8a5a00}.valor{background:#fde2e0;color:#b42318}
+.o p{margin:4px 0;font-size:14px;line-height:1.5}.m{color:#5b6577}#msg{color:#b42318;margin-top:10px}
+</style></head><body><div class="w">
+<h1>Pedidos Gaming Hub</h1>
+<div id="login"><input id="pw" type="password" placeholder="Senha" autocomplete="current-password"> <button id="go">Entrar</button><p id="msg"></p></div>
+<div id="app" hidden>
+<div class="bar"><button class="g on" data-f="pagos">Pagos</button><button class="g" data-f="aguardando">Aguardando pagamento</button><button class="g" data-f="todos">Todos</button><button id="re">Atualizar</button></div>
+<div id="list"></div></div></div>
+<script>
+var pw="",all=[],f="pagos",$=function(i){return document.getElementById(i)};
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+function brl(c){return (c/100).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+function load(){
+  $("msg").textContent="Carregando...";
+  fetch("/.netlify/functions/admin",{headers:{"x-admin-password":pw}})
+   .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d}})})
+   .then(function(x){if(!x.ok){$("msg").textContent=x.d.error||"Erro.";return}
+     all=x.d.orders;$("login").hidden=true;$("app").hidden=false;draw()})
+   .catch(function(){$("msg").textContent="Não foi possível carregar."});
+}
+function draw(){
+  var L=$("list");L.textContent="";
+  var s=all.filter(function(o){return f==="todos"||(f==="pagos"?o.status!=="aguardando":o.status==="aguardando")});
+  if(!s.length)L.appendChild(el("p","m","Nenhum pedido aqui ainda."));
+  s.forEach(function(o){
+    var c=el("div","o"),t=el("div","top"),a=o.address||{},u=o.customer||{};
+    var st=o.status==="pago"?"pago":o.status==="aguardando"?"aguardando":"valor";
+    t.appendChild(el("b","",o.order_nsu));t.appendChild(el("span","s "+st,o.status));c.appendChild(t);
+    c.appendChild(el("p","m",new Date(o.paidAt||o.createdAt).toLocaleString("pt-BR")+" · Total "+brl(o.total)+(o.method?" · "+(o.method==="pix"?"Pix":"Cartão"):"")));
+    (o.items||[]).forEach(function(i){c.appendChild(el("p","",i.quantity+"x "+i.description))});
+    c.appendChild(el("p","",u.name+" · "+u.email+" · "+u.phone_number));
+    c.appendChild(el("p","",a.street+", "+a.number+(a.complement?" ("+a.complement+")":"")+" · "+a.neighborhood+" · CEP "+a.cep));
+    if(/^https:\/\//.test(o.receiptUrl||"")){var l=el("a","","Ver comprovante");l.href=o.receiptUrl;l.target="_blank";l.rel="noopener";c.appendChild(l)}
+    L.appendChild(c);
+  });
+}
+$("go").onclick=function(){pw=$("pw").value;load()};
+$("pw").onkeydown=function(e){if(e.key==="Enter")$("go").onclick()};
+$("re").onclick=load;
+document.querySelectorAll("[data-f]").forEach(function(b){b.onclick=function(){f=b.dataset.f;
+  document.querySelectorAll("[data-f]").forEach(function(x){x.classList.toggle("on",x===b)});draw()}});
+</script></body></html>

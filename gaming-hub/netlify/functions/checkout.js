@@ -1,3 +1,5 @@
+const { connectLambda, getStore } = require("@netlify/blobs");
+
 // Cria o link de pagamento na InfinitePay. Os preços ficam AQUI (em centavos),
 // para ninguém conseguir alterar o valor pelo navegador.
 // Se mudar um preço, mude também no index.html.
@@ -19,6 +21,7 @@ const text = (s, max) => String(s || "").trim().slice(0, max);
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Método não permitido." });
 
+  connectLambda(event);
   const handle = process.env.INFINITEPAY_HANDLE;
   if (!handle) return json(500, { error: "INFINITEPAY_HANDLE não configurado." });
 
@@ -65,7 +68,22 @@ exports.handler = async (event) => {
       complement: text(c.complement, 80),
     },
   };
-  if (site) payload.redirect_url = site + "/";
+  if (site) {
+    payload.redirect_url = site + "/";
+    payload.webhook_url = site + "/.netlify/functions/webhook";
+  }
+
+  // Guarda o pedido antes de mandar o cliente pagar: assim toda venda tem registro.
+  const total = lines.reduce((s, l) => s + l.price * l.quantity, 0);
+  try {
+    await getStore("orders").setJSON(order_nsu, {
+      order_nsu, status: "aguardando", createdAt: new Date().toISOString(),
+      total, items: lines, customer: payload.customer, address: payload.address,
+    });
+  } catch (err) {
+    console.error("Falha ao salvar o pedido:", err);
+    return json(500, { error: "Não foi possível registrar o pedido." });
+  }
 
   try {
     const res = await fetch("https://api.checkout.infinitepay.io/links", {
